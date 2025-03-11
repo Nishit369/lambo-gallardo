@@ -51,7 +51,7 @@ const Customizer = () => {
         if(!prompt) return alert("please enter prompt");
             try{
                setGeneratingImg(true)
-               const response = await fetch('http://localhost:8080/api/v1/clipdrop/',{
+               const response = await fetch('https://lambo-gallardo.onrender.com/api/v1/clipdrop/',{
                 method:'POST',
                 headers: {
                     'Content-Type' : 'application/json'
