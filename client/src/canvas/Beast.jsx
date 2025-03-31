@@ -11,6 +11,9 @@ const Beast = (props) => {
     const {nodes, materials} = useGLTF('/red_beast.glb');
     const logoTexture = useTexture(snap.logoDecal);
     const fullTexture = useTexture(snap.fullDecal);
+    const glass = materials.glass_trans;
+    const original = glass.color.clone();
+  const original2 = materials.headlight_plastic.clone()
 
     useFrame((state,delta)=>{
         easing.dampC(materials.paint.color,snap.color,0.25,delta);
@@ -19,24 +22,30 @@ const Beast = (props) => {
       materials.Chrome.color.set("red");
       materials.chrome_light_reflective.color.set("yellow");
       
-      const glass = materials.glass_trans;
-
+      
+      glass.transparent = true;
+  glass.opacity = 0.3; 
+  
+  if(snap.isHeadlightOn){
   glass.color.set("#c9d8ff"); 
-  glass.transparent = true;
-  glass.opacity = 0.5; 
-  glass.metalness = 0.9; 
-  glass.roughness = 0.1; 
-  glass.envMapIntensity = 1.5; 
-  materials.headlight_plastic.color.set("#c9d8ff")
+  materials.headlight_plastic.color.set("#c9d8ff");
+  }
+  else{
+    glass.color.set("#000000"); 
+    materials.headlight_plastic.color.set("#000000");
+  }
+ 
+
 
   materials.material.color.set("black");
 
-    }, []);
+    }, [snap.isHeadlightOn]);
 
     const stateString = JSON.stringify(snap);
 
 
     return (
+      <>
         <group {...props} dispose={null}>
           <group rotation={[-Math.PI / 2, 0, Math.PI/6]} scale={0.015}>
             <group rotation={[Math.PI / 2, 0, 0]} key={stateString}>
@@ -938,6 +947,7 @@ const Beast = (props) => {
             </group>
           </group>
         </group>
+        </>
       )
 }
 

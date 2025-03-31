@@ -1,13 +1,18 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useRef} from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSnapshot } from 'valtio'
 import config from '../config/config';
 import state from '../store';
 import {download} from '../assets'
+import { rev } from '../assets';
+import { headlight } from '../assets';
+
+
 import { downloadCanvasToImage,reader } from '../config/helpers';
 import { EditorTabs, DecalTypes, FilterTabs } from '../config/constants';
 import { fadeAnimation, slideAnimation } from '../config/motion';
 import { AiPicker, ColorPicker, CustomButton, FilePicker, Tab } from '../components';
+
 
 
 
@@ -21,22 +26,31 @@ const Customizer = () => {
         logoCar: true,
         stylishCar: false
     });
+    const audioRef = useRef(new Audio('/sound.mp3'));
+    const popupRef = useRef();
+
+    const playSound = ()=>{
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+    }
 
 
     const generateTabContent = ()=>{
 
         switch (activeEditorTab) {
             case "colorpicker":
-                return <ColorPicker/>
+                return <ColorPicker popupRef={popupRef} />
             case "filepicker":
                 return <FilePicker
                     file={file}
                     setFile={setFile}
                     readFile={readFile}
+                    popupRef={popupRef}
                 />
             case "aipicker":
                 return <AiPicker
                     prompt={prompt}
+                    popupRef={popupRef}
                     setPrompt={setPrompt}
                     generatingImg={generatingImg}
                     handleSubmit={handleSubmit}
@@ -94,9 +108,13 @@ const Customizer = () => {
             case "stylishCar":
                     state.isFullTexture = !activeFilterTab[tabName];
                     break;
+            case "headlights":
+                    state.isHeadlightOn = !activeFilterTab[tabName];
+                break;
             default:
                 state.isLogoTexture = true;
                 state.isFullTexture = false;
+                state.isHeadlightOn = false;
                 break;
 
         }
@@ -116,6 +134,20 @@ const Customizer = () => {
         })
     }
 
+    useEffect(()=>{
+        const handleClickOutside=(e)=>{
+            if(popupRef.current && !popupRef.current.contains(e.target)){
+                setActiveEditorTab(null)
+            }
+        }
+        if (activeEditorTab) {
+            document.addEventListener("mousedown", handleClickOutside);
+          }
+          return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+          };
+        }, [activeEditorTab]);
+
   return (
     <AnimatePresence>
         {!snap.intro && (
@@ -132,7 +164,7 @@ const Customizer = () => {
                                 <Tab
                                     key={tab.name}
                                     tab={tab}
-                                    handleClick={()=>setActiveEditorTab(tab.name)}
+                                    handleClick={()=> activeEditorTab!==tab.name ? setActiveEditorTab(tab.name): setActiveEditorTab(null)}
                                 />
                                 
                             ))}
@@ -172,6 +204,13 @@ const Customizer = () => {
                                     handleClick={()=>{handleActiveFilterTab(tab.name)}}
                                 />
                             ))}
+                                        <button className='download-btn' onClick={playSound}>
+              <img
+                src={rev}
+                alt='rev_image'
+                className='w-3/5 h-3/5 object-contain'
+              />
+            </button>
                     <button className='download-btn' onClick={downloadCanvasToImage}>
               <img
                 src={download}
@@ -179,6 +218,7 @@ const Customizer = () => {
                 className='w-3/5 h-3/5 object-contain'
               />
             </button>
+
 
                 </motion.div>
             </>

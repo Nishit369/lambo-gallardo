@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { Canvas} from '@react-three/fiber'
-import { Lightformer, ContactShadows, Environment, Center} from '@react-three/drei'
+import { Lightformer, ContactShadows, Environment, Center, Loader} from '@react-three/drei'
 import Beast from './Beast'
 import Backdrop from './Backdrop'
 import CameraRig from './CameraRig'
@@ -11,6 +11,7 @@ import { Effects } from './Effects'
 
 const Model  = () => {
   return (
+    <Suspense fallback={<Loader/>}>
     <Canvas
     gl={{ preserveDrawingBuffer:true,logarithmicDepthBuffer: true, antialias: false }} dpr={[1, 1.5]} camera={{ position: [0, 0, 15], fov: 25 }} shadows>
       <Backdrop/>
@@ -22,6 +23,7 @@ const Model  = () => {
         <OrbitControls  enableZoom={false} enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2.25} minDistance={1} maxDistance={100} /> 
         
     </Canvas>
+    </Suspense>
   )
 }
 
