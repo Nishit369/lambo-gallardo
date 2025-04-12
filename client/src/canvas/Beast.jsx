@@ -1,182 +1,272 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {easing} from 'maath'
 import { useSnapshot } from 'valtio'
 import { useFrame } from '@react-three/fiber'
-import {Decal, useGLTF, useTexture} from '@react-three/drei'
+import {Decal, useGLTF, useTexture, Text, useScroll} from '@react-three/drei'
 import state from '../store'
+import { useMemo } from 'react';
+import * as THREE from 'three';
+
+const fontPromise = (function() {
+  // Return a promise that resolves when the font is loaded
+  return new Promise((resolve, reject) => {
+    const fontFace = new FontFace('CustomFont', 'url(/font.ttf)');
+    
+    fontFace.load().then(font => {
+      document.fonts.add(font);
+      resolve(true);
+    }).catch(err => {
+      console.error('Could not load the font:', err);
+      reject(err);
+    });
+  });
+})();
+
+fontPromise.catch(err => console.error('Font preloading failed:', err));
 
 
 const Beast = (props) => {
-    const snap = useSnapshot(state);
-    const {nodes, materials} = useGLTF('/red_beast.glb');
-    const logoTexture = useTexture(snap.logoDecal);
-    const fullTexture = useTexture(snap.fullDecal);
-    const glass = materials.glass_trans;
-    const original = glass.color.clone();
-  const original2 = materials.headlight_plastic.clone()
+  const snap = useSnapshot(state);
+  const {nodes, materials} = useGLTF('/red_beast.glb');
+  const logoTexture = useTexture(snap.logoDecal);
+  const fullTexture = useTexture(snap.fullDecal);
+  const glass = materials.glass_trans;
+  const doorRef = useRef();
+  const group = useRef();
 
-    useFrame((state,delta)=>{
-        easing.dampC(materials.paint.color,snap.color,0.25,delta);
-    })
-    useEffect(() => {
-      materials.Chrome.color.set("red");
-      materials.chrome_light_reflective.color.set("yellow");
-      
-      
-      glass.transparent = true;
-  glass.opacity = 0.3; 
   
-  if(snap.isHeadlightOn){
-  glass.color.set("#c9d8ff"); 
-  materials.headlight_plastic.color.set("#c9d8ff");
-  }
-  else{
-    glass.color.set("#000000"); 
-    materials.headlight_plastic.color.set("#000000");
-  }
+  // Store original positions for all meshes
+  
  
+    
+    
 
+  // Fixed animation frame with proper null checks
+  
+    
+        
+       
+  
+  const textTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 512;
+    canvas.height = 128;
+    
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    context.font = 'bold 30px CustomFont';
+    context.fillStyle = 'red'; 
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(snap.text || "", canvas.width / 2, canvas.height / 2);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+  }, [snap.text]); 
+  
+  useFrame((state, delta) => {
+    // Main car body color
+    easing.dampC(materials.paint.color, snap.color, 0.25, delta);
+    
+    // Door color - this is the key fix
+   
+      easing.dampC(doorRef.current.material.color, snap.doorColor , 0.25, delta);
+    
+    
+    // Rim color
+    easing.dampC(materials.material.color, snap.rimColor , 0.25, delta);
+    
+    // Glass lens color (headlights)
+    easing.dampC(materials.glass_lens.color, snap.isHeadlightOn ? "#ffffff" : "#000000", 0.25, delta);
+  });
+  
+  useEffect(() => {
+    // Set up materials
+    materials.Chrome.color.set("red");
+    materials.chrome_light_reflective.color.set("yellow");
+    
+    // Set up door material
+    // if (doorRef.current) {
+    //   // Create a new material instance for the door to prevent affecting other parts
+    //   doorRef.current.material = materials.paint.clone();
+    //   doorRef.current.material.color.set(snap.doorColor || snap.color);
+    // }
+    
+    // Set up glass properties
+    glass.transparent = true;
+    glass.opacity = 0.3;
+    
+    // Handle headlights
+    if (snap.isHeadlightOn) {
+      glass.color.set("#c9d8ff");
+      materials.headlight_plastic.color.set("#c9d8ff");
+    } else {
+      glass.color.set("#000000");
+      materials.headlight_plastic.color.set("#000000");
+    }
+    
+    // Set rim color
+    materials.material.color.set(snap.rimColor || "black");
+  }, [snap.isHeadlightOn, snap.rimColor, materials.paint]);
 
-  materials.material.color.set("black");
+  const stateString = JSON.stringify(snap);
 
-    }, [snap.isHeadlightOn]);
-
-    const stateString = JSON.stringify(snap);
-
-
-    return (
-      <>
-        <group {...props} dispose={null}>
-          <group rotation={[-Math.PI / 2, 0, Math.PI/6]} scale={0.015}>
-            <group rotation={[Math.PI / 2, 0, 0]} key={stateString}>
-              <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_spoiler001_plastic_black_0.geometry}
-                  material={materials.plastic_black}
-                >
-                </mesh>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_spoiler001_metal_black_0.geometry}
-                  material={materials.metal_black}
-                />
-              </group>
-              <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_light_inner_headlight_plastic_0.geometry}
-                  material={materials.headlight_plastic}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_light_inner_chrome_light_reflective_0.geometry}
-                  material={materials.chrome_light_reflective}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_light_inner_Chrome_0.geometry}
-                  material={materials.Chrome}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_light_inner_emission_1_0.geometry}
-                  material={materials.emission_1}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_light_inner_glass_lens_0.geometry}
-                  material={materials.glass_lens}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_light_inner_glass_trans_0.geometry}
-                  material={materials.glass_trans}
-                />
-              </group>
-              <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_bumper_repeater_glass_chrome_light_reflective_0.geometry}
-                  material={materials.chrome_light_reflective}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_bumper_repeater_glass_Chrome_0.geometry}
-                  material={materials.Chrome}
-                />
-              </group>
-              <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_spoiler_light_inner_chrome_light_reflective_0.geometry}
-                  material={materials.chrome_light_reflective}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_spoiler_light_inner_Chrome_0.geometry}
-                  material={materials.Chrome}
-                />
-              </group>
-              <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_bumper_light_inner_chrome_light_reflective_0.geometry}
-                  material={materials.chrome_light_reflective}
-                />
-                <mesh
+  return (
+    <>
+      <group {...props} dispose={null} ref={group}>
+        <group rotation={[-Math.PI / 2, 0, Math.PI/6]} scale={0.015} >
+          < group rotation={[Math.PI / 2, 0, 0]} key={stateString} >
+            <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_spoiler001_plastic_black_0.geometry}
+                material={materials.plastic_black}
+              >
+              </mesh>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_spoiler001_metal_black_0.geometry}
+                material={materials.metal_black}
+              />
+            </group>
+            <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_light_inner_headlight_plastic_0.geometry}
+                material={materials.headlight_plastic}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_light_inner_chrome_light_reflective_0.geometry}
+                material={materials.chrome_light_reflective}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_light_inner_Chrome_0.geometry}
+                material={materials.Chrome}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_light_inner_emission_1_0.geometry}
+                material={materials.emission_1}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_light_inner_glass_lens_0.geometry}
+                material={materials.glass_lens}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_light_inner_glass_trans_0.geometry}
+                material={materials.glass_trans}
+              />
+            </group>
+            <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_bumper_repeater_glass_chrome_light_reflective_0.geometry}
+                material={materials.chrome_light_reflective}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.f_bumper_repeater_glass_Chrome_0.geometry}
+                material={materials.Chrome}
+              />
+            </group>
+            <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_spoiler_light_inner_chrome_light_reflective_0.geometry}
+                material={materials.chrome_light_reflective}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_spoiler_light_inner_Chrome_0.geometry}
+                material={materials.Chrome}
+              />
+            </group>
+            <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_bumper_light_inner_chrome_light_reflective_0.geometry}
+                material={materials.chrome_light_reflective}
+              />
+              <mesh
                 castShadow
                 receiveShadow
                 geometry={nodes.b_bumper_light_inner_Chrome_0.geometry}
-                >
-              </mesh>
-              </group>
+                material={materials.Chrome}
+              />
+            </group>
+            <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_light_inner_light_inner_back_0.geometry}
+                material={materials.light_inner_back}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_light_inner_chrome_light_reflective_0.geometry}
+                material={materials.chrome_light_reflective}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_light_inner_Chrome_0.geometry}
+                material={materials.Chrome}
+              />
+              <mesh
+                castShadow
+                receiveShadow
+                geometry={nodes.b_light_inner_light_glow_back_0.geometry}
+                material={materials.light_glow_back}
+              />
+            </group>
+          
               <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_light_inner_light_inner_back_0.geometry}
-                  material={materials.light_inner_back}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_light_inner_chrome_light_reflective_0.geometry}
-                  material={materials.chrome_light_reflective}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_light_inner_Chrome_0.geometry}
-                  material={materials.Chrome}
-                />
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.b_light_inner_light_glow_back_0.geometry}
-                  material={materials.light_glow_back}
-                />
-              </group>
-              <group rotation={[-Math.PI / 2, 0, 0]} scale={100}>
-                <mesh
-                  castShadow
-                  receiveShadow
-                  geometry={nodes.f_bumper009_grid_back_0.geometry}
-                  material={materials.grid_back}
-                />
+              <mesh
+  castShadow
+  receiveShadow
+  geometry={nodes.f_bumper009_grid_back_0.geometry}
+  material={materials.grid_back}
+>
+  {textTexture && (
+    <Decal
+      position={[0, 2.5, 0.63]}
+      rotation={[Math.PI/2, Math.PI, 0]}
+      scale={[2, 0.5, 1]}
+      polygonOffset
+      polygonOffsetFactor={-1}
+    >
+      <meshStandardMaterial
+        map={textTexture}
+        transparent={true}
+        alphaTest={0.7}
+        depthWrite={false}
+        depthTest={true}
+        polygonOffset
+        polygonOffsetFactor={-10}
+        color="white" 
+      />
+    </Decal>
+  )}
+</mesh>
                 <mesh
                   castShadow
                   receiveShadow
@@ -297,6 +387,7 @@ const Beast = (props) => {
                 scale={100}
               />
               <mesh
+              
                 castShadow
                 receiveShadow
                 geometry={nodes.s_door_paint_0.geometry}
@@ -304,6 +395,8 @@ const Beast = (props) => {
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={100}
               >
+
+       
                                  
                 </mesh>
               <mesh
@@ -384,8 +477,11 @@ const Beast = (props) => {
                 material={materials.paint}
                 rotation={[-Math.PI / 2, 0, 0]}
                 scale={100}
-              />
+              >
+                
+                </mesh>
               <mesh
+                
                 castShadow
                 receiveShadow
                 geometry={nodes.s_door_handle_paint_0.geometry}
@@ -516,6 +612,7 @@ const Beast = (props) => {
                 scale={100}
               />
               <mesh
+              ref={doorRef}
                 castShadow
                 receiveShadow
                 geometry={nodes.s_door_window_detail_1_plastic_black_0.geometry}
@@ -718,7 +815,9 @@ const Beast = (props) => {
                 position={[92.138, 32.194, 110.253]}
                 rotation={[-Math.PI / 2, Math.PI / 2, 0]}
                 scale={100}
-              />
+              >
+                
+                </mesh>
               <mesh
                 castShadow
                 receiveShadow
@@ -772,7 +871,9 @@ const Beast = (props) => {
                 position={[92.704, 32.194, -144.294]}
                 rotation={[-Math.PI / 2, Math.PI / 2, 0]}
                 scale={100}
-              />
+              >
+                
+              </mesh>
               <mesh
                 castShadow
                 receiveShadow
@@ -898,7 +999,9 @@ const Beast = (props) => {
                 position={[-92.704, 32.194, -144.294]}
                 rotation={[-Math.PI / 2, Math.PI / 2, 0]}
                 scale={100}
-              />
+              >
+                
+                </mesh>
               <mesh
                 castShadow
                 receiveShadow
@@ -946,6 +1049,7 @@ const Beast = (props) => {
               />
             </group>
           </group>
+          
         </group>
         </>
       )

@@ -1,4 +1,4 @@
-import { swatch, fileIcon, ai, logocar, stylishcar, download, headlight } from "../assets";
+import { swatch, fileIcon, ai, logocar, stylishcar,  headlight, tirerim, cardoor,text } from "../assets";
 
 export const EditorTabs = [
   {
@@ -40,3 +40,20 @@ export const DecalTypes = {
     filterTab: "stylishCar",
   },
 };
+
+export const DesignTabs = [
+  {
+    name: "Rims",
+    icon: tirerim
+  },
+  {
+    name: "Door",
+    icon: cardoor
+  },
+
+  {
+    name: "Text",
+    icon: text
+  },
+
+]
